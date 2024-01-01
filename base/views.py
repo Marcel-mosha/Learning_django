@@ -6,7 +6,7 @@ from django .db.models import Q
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm
-from .models import Room, Topic
+from .models import Room, Topic, Message
 from .forms import RoomForm
 
 #rooms =[
@@ -21,7 +21,7 @@ def loginPage(request):
     if request.user.is_authenticated:
         return redirect('home')
     if request.method == "POST":
-        username= request.POST.get('username').lower()
+        username= request.POST.get('username')#.lower()
         password= request.POST.get('password')
         try:
             user= User.objects.get(username= username)
@@ -72,7 +72,18 @@ def home(request):
     return render(request, 'base/home.html', context )
 def room(request, pk):
     room= Room.objects.get(id=pk)
-    context ={'room':room}        
+    room_messages = room.message_set.all().order_by('-created')
+    participants = room.participants.all()
+    if request.method == "POST":
+        message = Message.objects.create(
+            user= request.user,
+            room= room,
+            body = request.POST.get('body')
+        )
+        return redirect('room', pk=room.id)
+    
+    
+    context ={'room':room, 'room_messages' : room_messages, 'participants': participants}        
     return render(request, 'base/room.html', context)
 @login_required(login_url= '/login')
 def createRoom(request):
